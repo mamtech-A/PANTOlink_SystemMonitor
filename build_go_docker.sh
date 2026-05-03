@@ -16,7 +16,7 @@ VERSION="$2"
 DESCRIPTION="${3:-No description provided.}"
 
 # ─── Image info ───────────────────────────────
-GITHUB_USER="amirhoseinmasoumi"
+GITHUB_USER=$(echo "${GITHUB_USER:-${GITHUB_REPOSITORY_OWNER:-amirhoseinmasoumi}}" | tr '[:upper:]' '[:lower:]')
 GHCR_IMAGE="ghcr.io/${GITHUB_USER}/${CONTAINER_NAME}:${VERSION}"
 GO_BINARY_NAME="${CONTAINER_NAME}"
 
