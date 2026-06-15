@@ -1,12 +1,12 @@
 services:
-  system-monitor:
+  system_monitor:
     build:
       context: .
       dockerfile: Dockerfile
 
-    image: system-monitor:${IMAGE_TAG}
+    image: system_monitor:${IMAGE_TAG}
 
-    container_name: system-monitor
+    container_name: system_monitor
 
     restart: unless-stopped
 

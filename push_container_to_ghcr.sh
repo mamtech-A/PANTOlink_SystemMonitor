@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # ─────────────────────────────────────────────────────────────
-# Push the system-monitor image to GHCR, reading the VERSION from the
-# image's own version tag (e.g. system-monitor:v1.0.3) — no arguments.
+# Push the system_monitor image to GHCR, reading the VERSION from the
+# image's own version tag (e.g. system_monitor:v1.0.3) — no arguments.
 #
 # USAGE:   ./push_container_to_ghcr.sh
 #
 # The version is detected like this, in order:
-#   1. Highest  system-monitor:vX.Y.Z  tag among the local images.
+#   1. Highest  system_monitor:vX.Y.Z  tag among the local images.
 #   2. Failing that, the .version file in the project folder (../).
 # Both are produced by build_run_verify.sh, so a normal build → push works.
 #
@@ -20,7 +20,7 @@ set -uo pipefail
 
 # ─── Config ──────────────────────────────────────────────────
 GITHUB_USER="amirhoseinmasoumi"
-IMAGE="system-monitor"          # local image name AND GHCR package name
+IMAGE="system_monitor"          # local image name AND GHCR package name
 
 # Project folder (parent of this script) — used for the .version fallback.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
