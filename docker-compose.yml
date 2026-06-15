@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  system-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: system-monitor:latest
+    container_name: system-monitor
+
+    # ZMQ + UDP style telemetry usually benefits from host networking
+    network_mode: "host"
+
+    restart: unless-stopped
+
+    # If you later add log output or persistence
+    volumes:
+      - ./logs:/app/logs

@@ -57,9 +57,9 @@ bool ZMQClient::sendPingTest() {
 
   const std::string pingJson = jsonMaker_.makeGoPingJson();
 
-  std::cout << "\n========== ZMQ PING JSON ==========\n";
-  std::cout << pingJson << '\n';
-  std::cout << "===================================\n";
+  // std::cout << "\n========== ZMQ PING JSON ==========\n";
+  // std::cout << pingJson << '\n';
+  // std::cout << "===================================\n";
 
   zmq::message_t request(pingJson.begin(), pingJson.end());
 
@@ -93,7 +93,7 @@ bool ZMQClient::sendMessage(const std::string &data) {
 
   try {
     std::cout << "[SEND] Sending " << data.size() << " bytes to server\n";
-    std::cout << "[SEND][JSON] " << data << '\n';
+    // std::cout << "[SEND][JSON] " << data << '\n';
 
     zmq::message_t request(data.begin(), data.end());
     if (!socket_->send(request, zmq::send_flags::none)) {
@@ -156,9 +156,9 @@ void ZMQClient::sampleAllMonitors() {
 bool ZMQClient::sendFullData() {
   const std::string fullJson = jsonMaker_.makeGoFullJson();
 
-  std::cout << "\n========== ZMQ FULL JSON ==========\n";
-  std::cout << fullJson << '\n';
-  std::cout << "===================================\n";
+  // std::cout << "\n========== ZMQ FULL JSON ==========\n";
+  // std::cout << fullJson << '\n';
+  // std::cout << "===================================\n";
 
   if (!sendMessage(fullJson)) {
     ++errorCount_;
@@ -176,9 +176,9 @@ bool ZMQClient::sendFullData() {
 bool ZMQClient::sendLiveData() {
   const std::string liveJson = jsonMaker_.makeGoLiveJson();
 
-  std::cout << "\n========== ZMQ LIVE JSON ==========\n";
-  std::cout << liveJson << '\n';
-  std::cout << "===================================\n";
+  // std::cout << "\n========== ZMQ LIVE JSON ==========\n";
+  // std::cout << liveJson << '\n';
+  // std::cout << "===================================\n";
 
   if (!sendMessage(liveJson)) {
     ++errorCount_;
@@ -208,9 +208,9 @@ void ZMQClient::runMetricsLoop() {
     if (!connected_) {
       const std::string fullJson = jsonMaker_.makeGoFullJson();
 
-      std::cout << "\n========== ZMQ FULL JSON ==========\n";
-      std::cout << fullJson << '\n';
-      std::cout << "===================================\n";
+      // std::cout << "\n========== ZMQ FULL JSON ==========\n";
+      // std::cout << fullJson << '\n';
+      // std::cout << "===================================\n";
       if (reconnectAttempts >= kMaxReconnectAttempts) {
         std::cout << "[ERROR] Max reconnect attempts (" << kMaxReconnectAttempts
                   << ") reached, stopping\n";
@@ -268,10 +268,10 @@ void ZMQClient::runMetricsLoop() {
       continue;
     }
 
-    std::cout << "[SUMMARY] CPU: " << cpuMonitor_.getTotalCPUUsage()
-              << "%, Memory: " << ramMonitor_.getMemoryPercentUsed()
-              << "%, Disk: " << diskMonitor_.getDiskPercentUsed() << "%\n";
-    std::cout << "[CYCLE] End of metrics collection\n";
+    // std::cout << "[SUMMARY] CPU: " << cpuMonitor_.getTotalCPUUsage()
+    //           << "%, Memory: " << ramMonitor_.getMemoryPercentUsed()
+    //           << "%, Disk: " << diskMonitor_.getDiskPercentUsed() << "%\n";
+    // std::cout << "[CYCLE] End of metrics collection\n";
 
     std::this_thread::sleep_for(std::chrono::milliseconds(kMetricIntervalMs));
   }
