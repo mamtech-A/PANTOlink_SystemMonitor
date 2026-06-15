@@ -112,6 +112,6 @@ docker image prune -f >/dev/null 2>&1
 # ─── Done ───────────────────────────────────────────────────
 echo
 echo "🎉 DONE"
-echo "   Image : ${IMAGE}:latest (v${NEW_VERSION})"
+echo "   Image : ${IMAGE}:v${NEW_VERSION}"
 echo "   Logs  : docker compose logs -f $SERVICE"
 echo "   Stop  : docker compose down"
