@@ -1,104 +1,69 @@
 #!/bin/bash
 
-# ─────────────────────────────────────────────────────────────
-# Push SystemMonitor Docker image to GitHub Container Registry (GHCR)
-#
-# USAGE:
-#   ./push_container_to_ghcr.sh
-#
-# Version detection priority:
-#   1. Docker image tag: system-monitor:vX.Y.Z (highest version wins)
-#   2. Fallback: .version file in project root
-#
-# Requires:
-#   docker login ghcr.io (or GHCR_TOKEN)
-# ─────────────────────────────────────────────────────────────
-
 set -uo pipefail
 
-# ─── Config ──────────────────────────────────────────────────
+# ─── Config ────────────────────────────────────────────────
 GITHUB_USER="amirhoseinmasoumi"
 IMAGE="system-monitor"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-PROJECT_DIR="${PROJECT_DIR:-$(cd "$SCRIPT_DIR/.." >/dev/null 2>&1 && pwd)}"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." >/dev/null 2>&1 && pwd)"
 
 fail() {
     echo
-    echo "════════════════════════════════════════════════════════"
     echo "❌ FAILED: $1"
     shift
-    for line in "$@"; do echo "   $line"; done
-    echo "════════════════════════════════════════════════════════"
+    for l in "$@"; do echo "   $l"; done
     exit 1
 }
 
-# ─── 1. Detect version from local Docker images ──────────────
-VERSION=$(docker images --format '{{.Tag}}' "$IMAGE" 2>/dev/null \
+# ─── Version detect ────────────────────────────────────────
+VERSION=$(docker images --format '{{.Tag}}' "$IMAGE" \
     | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
     | sort -V | tail -n 1)
 
-# fallback: .version file
 if [ -z "$VERSION" ] && [ -f "$PROJECT_DIR/.version" ]; then
-    VERSION="v$(tr -d ' \n' < "$PROJECT_DIR/.version")"
+    VERSION="v$(cat "$PROJECT_DIR/.version")"
 fi
 
-[ -z "$VERSION" ] && fail "No version found" \
-    "No ${IMAGE}:vX.Y.Z image exists and no .version file found." \
-    "Build first and tag image, e.g.:" \
-    "  docker tag ${IMAGE}:latest ${IMAGE}:v1.0.0"
+[ -z "$VERSION" ] && fail "No version found"
 
-echo "🏷️  Detected version: $VERSION"
+echo "🏷️ Detected version: $VERSION"
 
-# ─── 2. Select local image ───────────────────────────────────
+# ─── Source image ───────────────────────────────────────────
 LOCAL_IMAGE="${IMAGE}:${VERSION}"
 
-if ! docker image inspect "$LOCAL_IMAGE" >/dev/null 2>&1; then
-    LOCAL_IMAGE="${IMAGE}:latest"
+docker image inspect "$LOCAL_IMAGE" >/dev/null 2>&1 \
+    || fail "Missing local image $LOCAL_IMAGE"
+
+echo "📦 Source: $LOCAL_IMAGE"
+
+# ─── GHCR login check ───────────────────────────────────────
+if ! docker info | grep -q "Username: amirhoseinmasoumi"; then
+    echo "🔑 Logging into GHCR..."
+    echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_USER" --password-stdin \
+        || fail "GHCR login failed"
 fi
 
-docker image inspect "$LOCAL_IMAGE" >/dev/null 2>&1 \
-    || fail "Local image not found" \
-    "Missing ${IMAGE}:${VERSION} and ${IMAGE}:latest"
-
-echo "📦 Source image: $LOCAL_IMAGE"
-
-# ─── 3. GHCR tags ────────────────────────────────────────────
+# ─── Tags ───────────────────────────────────────────────────
 GHCR_VERSION="ghcr.io/${GITHUB_USER}/${IMAGE}:${VERSION}"
 GHCR_LATEST="ghcr.io/${GITHUB_USER}/${IMAGE}:latest"
 
-# ─── 4. Login to GHCR ────────────────────────────────────────
-if [ -n "${GHCR_TOKEN:-}" ]; then
-    echo "🔑 Logging into GHCR with token..."
-    echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_USER" --password-stdin
-
-elif grep -q "ghcr.io" "${HOME}/.docker/config.json" 2>/dev/null; then
-    echo "🔑 Using existing docker login credentials..."
-
-else
-    read -rs -p "Enter GitHub token (write:packages scope): " GHCR_TOKEN
-    echo
-    echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_USER" --password-stdin
-fi
-
-# ─── 5. Tag images ───────────────────────────────────────────
-echo "🏷️  Tagging images..."
+echo "🏷️ Tagging..."
 
 docker tag "$LOCAL_IMAGE" "$GHCR_VERSION"
 docker tag "$LOCAL_IMAGE" "$GHCR_LATEST"
 
-# ─── 6. Push images ──────────────────────────────────────────
-echo "🚀 Pushing versioned image..."
-docker push "$GHCR_VERSION"
+# ─── PUSH VERSION ───────────────────────────────────────────
+echo "🚀 Pushing version..."
+docker push "$GHCR_VERSION" || fail "Push failed (version tag)"
 
-echo "🚀 Pushing latest image..."
-docker push "$GHCR_LATEST"
+# ─── PUSH LATEST ────────────────────────────────────────────
+echo "🚀 Pushing latest..."
+docker push "$GHCR_LATEST" || fail "Push failed (latest tag)"
 
-# ─── 7. Done ────────────────────────────────────────────────
+# ─── DONE ───────────────────────────────────────────────────
 echo
-echo "🎉 Successfully pushed SystemMonitor"
+echo "🎉 SUCCESS"
 echo "   $GHCR_VERSION"
 echo "   $GHCR_LATEST"
-echo
-echo "📦 GitHub Packages:"
-echo "   https://github.com/${GITHUB_USER}?tab=packages"
