@@ -1,0 +1,74 @@
+name: Build and push SystemMonitor to PRO ECR
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag to push (e.g. v1.0.0)"
+        required: true
+      description:
+        description: "Image description (LABEL)"
+        required: true
+
+env:
+  AWS_REGION: eu-central-1
+  AWS_ACCOUNT_ID: "059391890823"
+  ECR_REPO: pantolink_pro/system_monitor
+  CONTAINER_NAME: system_monitor
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version metadata
+        id: meta
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          DESCRIPTION="${{ github.event.inputs.description }}"
+          {
+            echo "version=${VERSION}"
+            echo "build_date=${BUILD_DATE}"
+            echo "description=${DESCRIPTION}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image (linux/arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/arm64
+          push: true
+          provenance: false
+          tags: |
+            ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPO }}:${{ steps.meta.outputs.version }}
+            ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPO }}:latest
+          labels: |
+            org.opencontainers.image.title=${{ env.CONTAINER_NAME }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+            org.opencontainers.image.description=${{ steps.meta.outputs.description }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.build_date }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
